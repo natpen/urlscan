@@ -211,7 +211,7 @@ class URLChooser:
             self.headerwid = None
         self.top = urwid.Frame(listbox, self.headerwid)
         self.pad = int((self.term_width - self.width) / 2)
-        self.top = urwid.Padding(self.top, left=self.pad, right=self.pad)
+        self.top = urwid.Padding(self.top, left=0, right=self.pad)
         if self.urls:
             self.top.base_widget.body.focus_position = \
                 (2 if self.compact is False else 0)
@@ -672,10 +672,7 @@ class URLChooser:
         """
         items = []
         urls = []
-        first = True
         for group, usedfirst, usedlast in extractedurls:
-            if first:
-                first = False
             items.append(urwid.Divider(div_char='-', top=1, bottom=1))
             if dedupe is True:
                 # If no unique URLs exist, then skip the group completely
@@ -687,12 +684,19 @@ class URLChooser:
             if not usedfirst:
                 markup.append(('msgtext:ellipses', '...\n'))
             for chunks in group:
-                i = 0
+                if len(chunks) == 0:
+                    markup += '\n\n'
+                else:
+                    i = 0
                 while i < len(chunks):
                     chunk = chunks[i]
                     i += 1
                     if chunk.url is None:
+                        if chunk.markup[:2] == "  ":
+                            markup += '\n'
                         markup.append(('msgtext', chunk.markup))
+                        if len(chunk.markup) < 3 or re.search("^=+$", chunk.markup):
+                            markup += '\n'
                     else:
                         if (dedupe is True and chunk.url not in urls) \
                                 or dedupe is False:
@@ -713,7 +717,6 @@ class URLChooser:
                                    ('urlref:number:braces', ' ['),
                                    ('urlref:number', repr(url_idx)),
                                    ('urlref:number:braces', ']')]
-                markup += '\n'
             if not usedlast:
                 markup += [('msgtext:ellipses', '...\n\n')]
             items.append(urwid.Text(markup))
